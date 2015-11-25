@@ -1,6 +1,7 @@
 Library
 Temp
 Builds
+!*.obj
 *.csproj
 *.sln
 *.suo
