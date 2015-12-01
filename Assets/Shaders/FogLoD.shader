@@ -8,9 +8,9 @@ Properties {
 	_SpecularColor ("Specular Color", Color) = (0.5, 0.5, 0.5, 1)
 	_SpecularPower ("Specular Power", Float) = 48.0
 	_TessellationLevel ("Tessellation Level", Float) = 1
-	_NonEdgeTessellationFactor ("Non-edge Tessellation Factor", Range (0, 1)) = 1
+	_DistanceBasedTessellation ("Distance Based Tessellation", Range (0, 1)) = 1
+	_EdgeTessellationFactor ("Edge Tessellation Factor", Range (0, 2)) = 0
 	_ShadingLevel ("Shading Level", Range(0, 3)) = 3
-	_EdgeTessellationPower ("Edge Tessellation Power", Float) = 0
 }
 
 SubShader {
@@ -34,8 +34,8 @@ float _SpecularPower;
 float _Displacement;
 float _TessellationLevel;
 float _ShadingLevel;
-float _NonEdgeTessellationFactor;
-float _EdgeTessellationPower;
+float _DistanceBasedTessellation;
+float _EdgeTessellationFactor;
 
 struct appdata {
     float4 vertex : POSITION;
@@ -81,26 +81,45 @@ half4 LightingLoDControlled (SurfaceOutput s, half3 lightDir, half3 viewDir, hal
 	return half4 (0, 0, 0, 0);
 }
 
+float getEdgeFactor (float cosValue) {
+
+	float minEdgeFactor = pow(1.0 - cosValue, 2.0);
+	return 1.0 + _EdgeTessellationFactor / 2.0 * (minEdgeFactor - 1.0);
+}
+
 float4 tessateMesh (appdata v0, appdata v1, appdata v2) {
 
 	float4 cameraPosition = mul(_World2Object, float4(_WorldSpaceCameraPos, 1));
 	float3 viewDirection = normalize(cameraPosition - v0.vertex.xyz);
-	float cos0 = abs (dot (normalize (v0.normal), viewDirection)); 
+	float cos0 = abs (dot (normalize (v0.normal), viewDirection));
+	float edgeFactor0 = getEdgeFactor (cos0);
 	
 	viewDirection = normalize(cameraPosition - v1.vertex.xyz);
 	float cos1 = abs (dot (normalize (v1.normal), viewDirection));
+	float edgeFactor1 = getEdgeFactor (cos1);
 	
 	viewDirection = normalize(cameraPosition - v2.vertex.xyz); 
 	float cos2 = abs (dot (normalize (v2.normal), viewDirection));
+	float edgeFactor2 = getEdgeFactor (cos2);
 	
-	float leastCos = min (cos0, min (cos1, cos2));
+	float4 tessellationFactors = float4 (edgeFactor1+edgeFactor2, 
+										edgeFactor2+edgeFactor0, 
+										edgeFactor0+edgeFactor1, 
+										edgeFactor0+edgeFactor1+edgeFactor2) / float4(2,2,2,3);
+	
+	float4 center = float4 (1, 1, 1, 1) * 5;
+	
+	if (_DistanceBasedTessellation > 0.5) {
+	
+		center = (v0.vertex + v1.vertex + v2.vertex) / 3.0;
+		center = mul(UNITY_MATRIX_MVP, center);
+	}
 							
 	//To use non-uniform tessellation without tearing, 
 	//refer: http://answers.unity3d.com/questions/823170/displacementtessellation-tearingcracks.html
 
-	float tessellationLevel = max (floor (_TessellationLevel), 1);
-	float edgeFactor = pow(1.0 - leastCos, _EdgeTessellationPower);
-	return float4 (1, 1, 1, 1) * tessellationLevel * edgeFactor;
+	float tessellationLevel = max (floor (_TessellationLevel / center.w), 1);
+	return tessellationFactors * tessellationLevel;
 }
 
 void vert (inout appdata v) {
