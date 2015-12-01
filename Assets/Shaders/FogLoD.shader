@@ -9,7 +9,7 @@ Properties {
 	_SpecularPower ("Specular Power", Float) = 48.0
 	_TessellationLevel ("Tessellation Level", Float) = 1
 	_DistanceBasedTessellation ("Distance Based Tessellation", Range (0, 1)) = 1
-	_EdgeTessellationFactor ("Edge Tessellation Factor", Range (0, 2)) = 0
+	_EdgeTessellationFactor ("Edge Tessellation Factor", Range (0, 1)) = 0
 	_ShadingLevel ("Shading Level", Range(0, 3)) = 3
 }
 
@@ -84,7 +84,7 @@ half4 LightingLoDControlled (SurfaceOutput s, half3 lightDir, half3 viewDir, hal
 float getEdgeFactor (float cosValue) {
 
 	float minEdgeFactor = pow(1.0 - cosValue, 2.0);
-	return 1.0 + _EdgeTessellationFactor / 2.0 * (minEdgeFactor - 1.0);
+	return 1.0 + _EdgeTessellationFactor * (minEdgeFactor - 1.0);
 }
 
 float4 tessateMesh (appdata v0, appdata v1, appdata v2) {
