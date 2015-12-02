@@ -35,5 +35,9 @@ public class FogLoDController : MonoBehaviour {
 		}
 
 		renderer.material.SetFloat ("_EdgeTessellationFactor", occlusionLevel);
+
+		if (occlusionLevel > 0.95f) renderer.material.SetFloat ("_ShadingLevel", 0.5f);
+		else if (occlusionLevel > 0.75f) renderer.material.SetFloat ("_ShadingLevel", 1.5f);
+		else renderer.material.SetFloat ("_ShadingLevel", 3);
 	}
 }

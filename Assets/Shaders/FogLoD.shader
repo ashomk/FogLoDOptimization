@@ -83,8 +83,8 @@ half4 LightingLoDControlled (SurfaceOutput s, half3 lightDir, half3 viewDir, hal
 
 float getEdgeFactor (float cosValue) {
 
-	float minEdgeFactor = pow(1.0 - cosValue, 2.0);
-	return 1.0 + _EdgeTessellationFactor * (minEdgeFactor - 1.0);
+	float minEdgeFactor = pow(1.0 - cosValue, _EdgeTessellationFactor * 2.0);
+	return minEdgeFactor;
 }
 
 float4 tessateMesh (appdata v0, appdata v1, appdata v2) {
